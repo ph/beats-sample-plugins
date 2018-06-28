@@ -4,24 +4,18 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/elastic/beats/libbeat/beat"
 	"github.com/elastic/beats/libbeat/common"
+	"github.com/elastic/beats/libbeat/logp"
 	"github.com/elastic/beats/libbeat/processors"
 )
 
 type dropFields struct {
 	Fields []string
+	log    *logp.Logger
 }
 
-/*
-func init() {
-	processors.RegisterPlugin("drop_fields",
-		configChecked(newDropFields,
-			requireFields("fields"),
-			allowedFields("fields", "when")))
-}
-*/
-
-func New(c common.Config) (processors.Processor, error) {
+func New(c *common.Config) (processors.Processor, error) {
 	config := struct {
 		Fields []string `config:"fields"`
 	}{}
@@ -39,11 +33,12 @@ func New(c common.Config) (processors.Processor, error) {
 		}
 	}
 
-	f := dropFields{Fields: config.Fields}
+	f := dropFields{Fields: config.Fields, log: logp.NewLogger("mydropfields")}
 	return f, nil
 }
 
-func (f dropFields) Run(event common.MapStr) (common.MapStr, error) {
+func (f dropFields) Run(event *beat.Event) (*beat.Event, error) {
+	f.log.Info("Run my drop field")
 	var errors []string
 
 	for _, field := range f.Fields {
@@ -51,7 +46,6 @@ func (f dropFields) Run(event common.MapStr) (common.MapStr, error) {
 		if err != nil {
 			errors = append(errors, err.Error())
 		}
-
 	}
 
 	if len(errors) > 0 {
